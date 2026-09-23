@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZEF FUNd Run — Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#1F3350; --sky-soft:#EAF4FB; --grass:#3BA55C; --sun:#FFC83D; --red:#E5483B;
+    --ink:#1F2A44; --ink-soft:#5B6782; --paper:#FFFFFF; --track:#D9E7F2;
+    --gold:#F2C12E; --silver:#C3CAD4; --bronze:#D08A4E;
+  }
+  :root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+  *,*::before,*::after{box-sizing:inherit}
+  html,body{margin:0}
+  body{font-family:Fredoka,"Arial Rounded MT Bold",Arial,sans-serif;background:var(--sky-soft);color:var(--ink);
+       -webkit-font-smoothing:antialiased;padding:24px 16px 48px}
+  main{max-width:900px;margin:0 auto}
+
+  .board{background:var(--paper);border-radius:24px;padding:12px;box-shadow:0 2px 0 #cfe0ee}
+  .board svg{display:block;width:100%;height:auto}
+
+  .actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 4px 0}
+  .stamp{color:var(--ink-soft);font-size:15px}
+  .stamp.stale{color:var(--red)}
+  button{font:inherit;font-weight:600;font-size:16px;border:0;border-radius:999px;padding:10px 20px;
+         background:var(--navy);color:#fff;cursor:pointer}
+  button:hover{background:#2E7DD7}
+  button:focus-visible{outline:3px solid var(--sun);outline-offset:3px}
+
+  h2{font-weight:700;font-size:28px;margin:48px 4px 4px}
+  .sub{margin:0 4px 16px;color:var(--ink-soft);font-size:16px;max-width:60ch}
+
+  .podium{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+  .place{background:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 0 #cfe0ee;min-width:0}
+  .place .who2{min-width:0}
+  .place strong{display:block;font-weight:600;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .place span{color:var(--ink-soft);font-size:15px}
+  .medal{flex:none;display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;
+         font-weight:700;font-size:14px;color:var(--ink);border:3px solid rgba(0,0,0,.12)}
+  .m1{background:var(--gold)} .m2{background:var(--silver)} .m3{background:var(--bronze)}
+  .medal.sm{width:26px;height:26px;font-size:10px;border-width:2px}
+
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 4px 14px;font-size:14px;color:var(--ink-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .legend .tag{width:auto;height:auto;border-radius:999px;background:var(--sun);color:var(--ink);font-style:normal;font-size:12px;font-weight:600;padding:1px 8px}
+
+  .race{background:var(--grass);border-radius:24px;padding:22px 12px 10px;position:relative}
+  .grade{color:#fff;font-weight:600;font-size:14px;margin:8px 4px 4px;opacity:.9}
+  .lane{display:grid;grid-template-columns:120px 1fr;align-items:center;height:48px}
+  .who{color:#fff;font-weight:500;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:8px}
+  .track{position:relative;height:100%;border-bottom:2px dashed rgba(255,255,255,.35)}
+  .finish{position:absolute;top:0;bottom:0;right:0;width:10px;z-index:1;
+          background:repeating-conic-gradient(#fff 0 25%,var(--ink) 0 50%) 0 0/10px 10px}
+  .finish-tag{position:absolute;right:0;top:-6px;transform:translateY(-100%);background:#fff;color:var(--ink);
+              font-weight:600;font-size:13px;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .horse{position:absolute;bottom:2px;left:0;display:flex;align-items:flex-end;gap:4px;z-index:2;
+         transition:left 2.2s cubic-bezier(.3,.8,.3,1)}
+  .horse.flip{flex-direction:row-reverse;transition:none}
+  .horse svg{width:56px;height:40px;flex:none}
+  .tagrow{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+  .amt{font-weight:600;font-size:14px;color:var(--ink);background:#fff;border-radius:999px;padding:1px 8px;white-space:nowrap}
+  .won .amt{background:var(--sun)}
+  .leg-f{transform-origin:40px 28px} .leg-b{transform-origin:17px 28px}
+  .running .leg-f{animation:swing .35s ease-in-out infinite alternate}
+  .running .leg-b{animation:swing .35s ease-in-out infinite alternate-reverse}
+  .running svg{animation:bob .35s ease-in-out infinite alternate}
+  @keyframes swing{from{transform:rotate(-24deg)}to{transform:rotate(24deg)}}
+  @keyframes bob{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+  @media (prefers-reduced-motion:reduce){
+    .horse{transition:none}.running .leg-f,.running .leg-b,.running svg{animation:none}
+  }
+  @media (max-width:600px){
+    .podium{grid-template-columns:1fr}
+    .lane{grid-template-columns:84px 1fr}
+    .who{font-size:13px}
+    .horse svg{width:44px;height:32px}
+    .amt{font-size:12px}
+    h2{font-size:24px}
+  }
+
+  .modal{position:fixed;inset:0;background:rgba(31,42,68,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+  .modal.open{display:flex}
+  .sheet{background:#fff;border-radius:20px;padding:18px;max-width:760px;width:100%;text-align:center}
+  .sheet img{width:100%;height:auto;border-radius:12px;border:1px solid var(--track)}
+  .sheet p{color:var(--ink-soft);margin:12px 0}
+  .sheet .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center}
+  .sheet a{font-weight:600;color:#2E7DD7}
+  .ghost{background:transparent;color:var(--ink);border:2px solid var(--track)}
+  .ghost:hover{background:var(--sky-soft)}
+</style>
+</head>
+<body>
+<main>
+  <div class="board" id="board" aria-live="polite"></div>
+  <div class="actions">
+    <span class="stamp" id="stamp">Loading…</span>
+    <button id="getImg" type="button">Get newsletter image</button>
+  </div>
+
+  <h2>Classroom race</h2>
+  <p class="sub" id="raceSub">The race ends October 2. The leading class crosses the finish line on the last day.</p>
+  <div class="podium" id="podium"></div>
+  <div class="legend" id="legend"></div>
+  <div class="race" id="race"></div>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="Newsletter image">
+  <div class="sheet">
+    <img id="png" alt="FUNd Run progress: registration gauge and donation thermometer">
+    <p>Right-click the image to copy it, or download it below.</p>
+    <div class="row">
+      <a id="dl" download="fund-run-progress.png" href="#">Download PNG</a>
+      <button class="ghost" id="close" type="button">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA_URL = 'https://script.google.com/macros/s/AKfycby89ldrwnWEHnd0Lg95YaUs-OxV0rbAQjWHzb351b5BxoDU5-V27LCXRuV5KEkEcImCPg/exec?format=json';
+
+const GRADES = [
+  {key:'K', label:'Kindergarten', color:'#E5483B'},
+  {key:'1', label:'1st grade',    color:'#F28C28'},
+  {key:'2', label:'2nd grade',    color:'#F2B705'},
+  {key:'3', label:'3rd grade',    color:'#1F6F3A'},
+  {key:'4', label:'4th grade',    color:'#2E7DD7'},
+  {key:'5', label:'5th grade',    color:'#7B4FC9'}
+];
+const FONT = 'Fredoka, "Arial Rounded MT Bold", Arial, sans-serif';
+const NAVY = '#1F3350';
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+let DATA = null, fontCSS = null;
+
+/* ---------- gauge + thermometer (one image) ---------- */
+function P(cx, cy, r, deg){ const a = deg*Math.PI/180; return [cx + r*Math.cos(a), cy - r*Math.sin(a)]; }
+function arcPath(cx, cy, r, from, to){ // clockwise from "from" to "to" (math degrees, from > to)
+  const [x1,y1] = P(cx,cy,r,from), [x2,y2] = P(cx,cy,r,to);
+  const large = (from - to) > 180 ? 1 : 0;
+  return 'M'+x1.toFixed(2)+' '+y1.toFixed(2)+' A'+r+' '+r+' 0 '+large+' 1 '+x2.toFixed(2)+' '+y2.toFixed(2);
+}
+function mix(a, b, t){
+  const h = s => [1,3,5].map(i => parseInt(s.slice(i,i+2),16));
+  const A = h(a), B = h(b);
+  return '#' + A.map((v,i) => Math.round(v + (B[i]-v)*t).toString(16).padStart(2,'0')).join('');
+}
+function bandColor(p){ // red -> orange -> yellow across 0-75, green for the last 25
+  if (p >= 75) return '#3FA34D';
+  if (p < 37.5) return mix('#E53935', '#F57C00', p/37.5);
+  return mix('#F57C00', '#FBC02D', (p-37.5)/37.5);
+}
+const deg = p => 225 - p*2.7;
+
+function graphic(d, t, embedFont){
+  const has = d.registeredPct != null;
+  const pct = has ? d.registeredPct * t : 0;
+  const frac = Math.min(1, d.raised / d.goal) * t;
+  let s = '';
+
+  // ---- shared shell: gauge bezel and thermometer housing fused into one body ----
+  const cx = 250, cy = 244;
+  const hx = 432, hw = 160, hTop = 40, hBot = 452;      // housing overlaps the bezel so they read as one piece
+  const tcx = hx + 62, tubeW = 30, top = 92, zero = 330, bulbY = 384, bulbR = 38;
+  // shadows
+  s += '<circle cx="'+cx+'" cy="'+(cy+7)+'" r="198" fill="#000" opacity=".10"/>'
+     + '<rect x="'+hx+'" y="'+(hTop+7)+'" width="'+hw+'" height="'+(hBot-hTop)+'" rx="'+(hw/2)+'" fill="#000" opacity=".10"/>';
+  // navy bodies (same color, so the overlap merges)
+  s += '<circle cx="'+cx+'" cy="'+cy+'" r="198" fill="'+NAVY+'"/>'
+     + '<rect x="'+hx+'" y="'+hTop+'" width="'+hw+'" height="'+(hBot-hTop)+'" rx="'+(hw/2)+'" fill="'+NAVY+'"/>';
+  // inner rims
+  s += '<circle cx="'+cx+'" cy="'+cy+'" r="188" fill="none" stroke="#2E4A70" stroke-width="5"/>'
+     + '<rect x="'+(hx+8)+'" y="'+(hTop+8)+'" width="'+(hw-16)+'" height="'+(hBot-hTop-16)+'" rx="'+(hw/2-8)+'" fill="none" stroke="#2E4A70" stroke-width="5"/>';
+  // faces
+  s += '<circle cx="'+cx+'" cy="'+cy+'" r="172" fill="#fff"/>'
+     + '<circle cx="'+cx+'" cy="'+cy+'" r="170" fill="none" stroke="#E4EAF1" stroke-width="4"/>'
+     + '<rect x="'+(hx+16)+'" y="'+(hTop+16)+'" width="'+(hw-32)+'" height="'+(hBot-hTop-32)+'" rx="'+(hw/2-16)+'" fill="#fff"/>';
+  // color band
+  for (let p = 0; p < 100; p += 1){
+    s += '<path d="'+arcPath(cx,cy,136,deg(p)+0.05,deg(p+1)-0.05)+'" fill="none" stroke="'+bandColor(p+0.5)+'" stroke-width="32"/>';
+  }
+  // ticks
+  for (let p = 0; p <= 100; p += 2.5){
+    const major = p % 10 === 0 || p === 75 || p === 25;
+    const [a,b] = P(cx,cy,152,deg(p)), [c,e] = P(cx,cy,major?122:140,deg(p));
+    s += '<line x1="'+a.toFixed(1)+'" y1="'+b.toFixed(1)+'" x2="'+c.toFixed(1)+'" y2="'+e.toFixed(1)+'" stroke="'+NAVY+'" stroke-width="'+(major?3.5:2)+'"/>';
+  }
+  // needle
+  const na = deg(pct);
+  const [tx1,ty1] = P(cx,cy,128,na), [b1x,b1y] = P(cx,cy,9,na+90), [b2x,b2y] = P(cx,cy,9,na-90), [tl,tly] = P(cx,cy,24,na+180);
+  s += '<polygon points="'+[tx1,ty1,b1x,b1y,tl,tly,b2x,b2y].map(v=>v.toFixed(1)).join(' ')+'" fill="'+NAVY+'"/>'
+     + '<circle cx="'+cx+'" cy="'+cy+'" r="17" fill="'+NAVY+'"/><circle cx="'+cx+'" cy="'+cy+'" r="7" fill="#fff"/>';
+  s += '<text x="'+cx+'" y="'+(cy+80)+'" font-size="48" font-weight="700" text-anchor="middle" fill="'+NAVY+'">'+(has?Math.round(pct)+'%':'—')+'</text>'
+     + '<text x="'+cx+'" y="'+(cy+112)+'" font-size="17" font-weight="700" letter-spacing="1.5" text-anchor="middle" fill="'+NAVY+'">REGISTRATION</text>';
+
+  // ---- thermometer ----
+  s += '<rect x="'+(tcx-tubeW/2)+'" y="'+(top-18)+'" width="'+tubeW+'" height="'+(bulbY-top+18)+'" rx="'+(tubeW/2)+'" fill="#E9EEF4"/>'
+     + '<circle cx="'+tcx+'" cy="'+bulbY+'" r="'+bulbR+'" fill="#E9EEF4"/>';
+  const fillTop = zero - (zero - top) * frac;
+  s += '<rect x="'+(tcx-tubeW/2+6)+'" y="'+fillTop.toFixed(1)+'" width="'+(tubeW-12)+'" height="'+(bulbY-fillTop).toFixed(1)+'" rx="'+(tubeW/2-6)+'" fill="#E53935"/>'
+     + '<circle cx="'+tcx+'" cy="'+bulbY+'" r="'+(bulbR-8)+'" fill="#E53935"/>'
+     + '<circle cx="'+(tcx-10)+'" cy="'+(bulbY-10)+'" r="7" fill="#fff" opacity=".35"/>';
+  for (let k = 0; k <= 5; k++){
+    const y = zero - (zero-top) * k/5;
+    s += '<line x1="'+(tcx+tubeW/2+6)+'" y1="'+y+'" x2="'+(tcx+tubeW/2+18)+'" y2="'+y+'" stroke="'+NAVY+'" stroke-width="3"/>';
+    if (k % 1 === 0) s += '<text x="'+(tcx+tubeW/2+24)+'" y="'+(y+5)+'" font-size="15" font-weight="600" fill="'+NAVY+'">'+(k*d.goal/5/1000)+'k</text>';
+    if (k < 5){ const ym = y - (zero-top)/10;
+      s += '<line x1="'+(tcx+tubeW/2+6)+'" y1="'+ym+'" x2="'+(tcx+tubeW/2+12)+'" y2="'+ym+'" stroke="'+NAVY+'" stroke-width="2"/>'; }
+  }
+
+  // ---- numbers beside the thermometer ----
+  const upd = new Date(d.updated).toLocaleString('en-US',{timeZone:'America/Denver',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const rx = 730;
+  s += '<text x="'+rx+'" y="118" font-size="30" font-weight="700" text-anchor="middle" fill="'+NAVY+'">ZEF</text>'
+     + '<text x="'+rx+'" y="152" font-size="30" font-weight="700" text-anchor="middle" fill="'+NAVY+'">FUNd Run</text>'
+     + '<text x="'+rx+'" y="262" font-size="44" font-weight="700" text-anchor="middle" fill="'+NAVY+'">'+money(d.raised*t)+'</text>'
+     + '<text x="'+rx+'" y="292" font-size="17" font-weight="700" letter-spacing="1.5" text-anchor="middle" fill="'+NAVY+'">DONATIONS</text>'
+     + '<text x="'+rx+'" y="318" font-size="17" font-weight="500" text-anchor="middle" fill="#5B6782">goal '+money(d.goal)+'</text>'
+     + '<text x="'+rx+'" y="440" font-size="14" text-anchor="middle" fill="#8A95AD">Updated '+upd+'</text>';
+
+  const style = embedFont && fontCSS ? '<style>'+fontCSS+'</style>' : '';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 850 470" role="img" aria-label="'
+    + (has?Math.round(d.registeredPct)+'% registered, ':'') + money(d.raised)+' donated of '+money(d.goal)+' goal">'
+    + style + '<rect width="850" height="470" rx="22" fill="#fff"/>'
+    + '<g font-family=\''+FONT+'\'>' + s + '</g></svg>';
+}
+function drawBoard(d){
+  const el = document.getElementById('board');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches){ el.innerHTML = graphic(d,1); return; }
+  const start = performance.now(), dur = 1600;
+  (function step(now){
+    const p = Math.min(1,(now-start)/dur), e = 1 - Math.pow(1-p,3);
+    el.innerHTML = graphic(d,e);
+    if (p < 1) requestAnimationFrame(step);
+  })(start);
+}
+
+/* ---------- horse race ---------- */
+function horseSVG(color){
+  return '<svg viewBox="0 0 64 44" aria-hidden="true">'
+   + '<path d="M13 21 C6 22 3 28 2 34" stroke="#3B2414" stroke-width="3.5" fill="none" stroke-linecap="round"/>'
+   + '<g class="leg-b"><rect x="15" y="27" width="3.5" height="15" rx="1.7" fill="#6B4226"/><rect x="20" y="27" width="3.5" height="14" rx="1.7" fill="#7A4B2A"/></g>'
+   + '<g class="leg-f"><rect x="36" y="27" width="3.5" height="15" rx="1.7" fill="#6B4226"/><rect x="41" y="27" width="3.5" height="14" rx="1.7" fill="#7A4B2A"/></g>'
+   + '<ellipse cx="29" cy="24" rx="17" ry="8.5" fill="#8B5A2B"/>'
+   + '<path d="M38 22 L46 8 L53 9 L46 26 Z" fill="#8B5A2B"/>'
+   + '<ellipse cx="53" cy="11" rx="8" ry="4.5" transform="rotate(22 53 11)" fill="#8B5A2B"/>'
+   + '<path d="M47 6 L49 1 L51 7 Z" fill="#6B4226"/>'
+   + '<path d="M40 19 L46 7 L48 8 L43 20 Z" fill="#3B2414"/>'
+   + '<circle cx="55" cy="10" r="1.2" fill="#1F2A44"/>'
+   + '<rect x="24" y="14" width="10" height="5" rx="1.5" fill="#fff"/>'
+   + '<path d="M26 16 C26 9 30 4 36 5 L37 11 C34 12 32 15 32 17 Z" fill="'+color+'"/>'
+   + '<path d="M34 9 L44 13" stroke="'+color+'" stroke-width="3" stroke-linecap="round"/>'
+   + '<circle cx="37" cy="3.8" r="3.6" fill="'+color+'"/><circle cx="37" cy="3.8" r="3.6" fill="#000" opacity=".18"/>'
+   + '</svg>';
+}
+function gradeOf(name){
+  const part = (name.split(',')[1] || '').trim();
+  if (/^k/i.test(part)) return 'K';
+  const m = part.match(/(\d)/); return m ? m[1] : '?';
+}
+const ORD = ['1st','2nd','3rd'];
+function drawRace(d){
+  const race = document.getElementById('race');
+  const start = new Date(d.raceStart).getTime(), end = new Date(d.raceEnd).getTime();
+  const progress = Math.max(0, Math.min(1, (Date.now() - start) / (end - start)));
+  const lead = Math.max(0, ...d.classes.map(c => c.total));
+
+  // places to date (ties share a place)
+  const ranked = d.classes.filter(c => c.total > 0).sort((a,b) => b.total - a.total);
+  const place = new Map(); let r = 0, prev = null;
+  ranked.forEach((c,i) => { if (c.total !== prev){ r = i+1; prev = c.total; } if (r <= 3) place.set(c.name, r); });
+
+  document.getElementById('podium').innerHTML = ranked.filter(c => place.has(c.name)).slice(0,3).map(c => {
+    const n = place.get(c.name), [teacher, grade] = c.name.split(',');
+    return '<div class="place"><span class="medal m'+n+'">'+ORD[n-1]+'</span><div class="who2"><strong>'+teacher+'</strong><span>'
+      + (grade||'').trim()+', '+money(c.total)+'</span></div></div>';
+  }).join('');
+
+  const endLabel = new Date(d.raceEnd).toLocaleDateString('en-US',{timeZone:'America/Denver',month:'long',day:'numeric'});
+  document.getElementById('raceSub').textContent = progress >= 1
+    ? 'The race is over. Final standings are below.'
+    : 'The race ends '+endLabel+'. The leading class crosses the finish line on the last day.';
+
+  let html = '';
+  GRADES.concat([{key:'?',label:'Other',color:'#5B6782'}]).forEach(g => {
+    const rows = d.classes.filter(c => gradeOf(c.name) === g.key).sort((a,b)=>a.name.localeCompare(b.name));
+    if (!rows.length) return;
+    html += '<div class="grade">'+g.label+'</div>';
+    rows.forEach(c => {
+      const teacher = c.name.split(',')[0];
+      const pos = lead > 0 ? progress * (c.total / lead) * 100 : 0;
+      const n = place.get(c.name);
+      html += '<div class="lane"><div class="who" title="'+c.name+'">'+teacher+'</div><div class="track">'
+        + '<div class="finish"></div>'
+        + '<div class="horse running'+(c.total >= d.classGoal ? ' won' : '')+'" data-p="'+pos.toFixed(2)+'" aria-label="'+teacher+': '+money(c.total)+(n?', '+ORD[n-1]+' place':'')+'">'
+        + horseSVG(g.color)
+        + '<span class="tagrow">'+(n?'<span class="medal sm m'+n+'">'+ORD[n-1]+'</span>':'')+'<span class="amt">'+money(c.total)+'</span></span>'
+        + '</div></div></div>';
+    });
+  });
+  race.innerHTML = html;
+
+  const firstTrack = race.querySelector('.track');
+  if (firstTrack){
+    const tag = document.createElement('div');
+    tag.className = 'finish-tag';
+    tag.textContent = 'Finish ' + new Date(d.raceEnd).toLocaleDateString('en-US',{timeZone:'America/Denver',month:'numeric',day:'2-digit'}).replace(/^(\d)\//,'0$1/');
+    firstTrack.appendChild(tag);
+  }
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    race.querySelectorAll('.horse').forEach(h => {
+      const p = parseFloat(h.dataset.p) / 100;
+      const nose = 'calc((100% - 10px) * ' + p.toFixed(4) + ')';
+      if (p > 0.6){ h.classList.add('flip'); h.style.left = 'auto'; h.style.right = 'calc(100% - ' + nose.slice(5, -1) + ')'; }
+      else h.style.left = 'max(0px, calc((100% - 10px) * ' + p.toFixed(4) + ' - 56px))';
+    });
+    setTimeout(() => race.querySelectorAll('.horse').forEach(h => h.classList.remove('running')), 2400);
+  }));
+
+  document.getElementById('legend').innerHTML = GRADES.map(g =>
+    '<span><i style="background:'+g.color+'"></i>'+g.label+'</span>').join('')
+    + '<span><i class="tag">'+money(d.classGoal)+'</i>Day of Fun earned</span>';
+}
+
+/* ---------- data ---------- */
+function render(d){
+  DATA = d;
+  drawBoard(d);
+  drawRace(d);
+  const s = document.getElementById('stamp');
+  const time = new Date(d.updated).toLocaleTimeString('en-US',{timeZone:'America/Denver',hour:'numeric',minute:'2-digit'});
+  s.textContent = d.stale ? 'PledgeStar could not be reached. Showing totals from the last successful update.'
+                          : 'Updated ' + time + '. Refreshes every 10 minutes.';
+  s.classList.toggle('stale', !!d.stale);
+}
+async function load(){
+  try {
+    const r = await fetch(DATA_URL, {cache: 'no-store'});
+    const d = await r.json();
+    if (!d || !d.classes) throw new Error('No data');
+    render(d);
+  } catch (e) {
+    if (!DATA) document.getElementById('stamp').textContent = 'Could not load the latest numbers. Trying again…';
+    setTimeout(load, 30 * 1000);
+  }
+}
+load();
+setInterval(load, 10 * 60 * 1000);
+
+/* ---------- newsletter PNG ---------- */
+async function loadFontCSS(){
+  if (fontCSS !== null) return;
+  try {
+    let css = await (await fetch('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap')).text();
+    const urls = [...new Set(css.match(/https:[^)]+\.woff2/g) || [])];
+    for (const u of urls){
+      const blob = await (await fetch(u)).blob();
+      const data = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+      css = css.split(u).join(data);
+    }
+    fontCSS = css;
+  } catch(e){ fontCSS = ''; }
+}
+document.getElementById('getImg').addEventListener('click', async () => {
+  if (!DATA) return;
+  const btn = document.getElementById('getImg'); btn.textContent = 'Preparing…';
+  await loadFontCSS();
+  const img = new Image();
+  img.onload = () => {
+    const scale = 2, c = document.createElement('canvas');
+    c.width = 850*scale; c.height = 470*scale;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const url = c.toDataURL('image/png');
+    document.getElementById('png').src = url;
+    document.getElementById('dl').href = url;
+    document.getElementById('modal').classList.add('open');
+    btn.textContent = 'Get newsletter image';
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(graphic(DATA, 1, true));
+});
+document.getElementById('close').addEventListener('click', () => document.getElementById('modal').classList.remove('open'));
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') e.target.classList.remove('open'); });
+</script>
+</body>
+</html>
